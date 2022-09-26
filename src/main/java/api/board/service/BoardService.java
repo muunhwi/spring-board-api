@@ -114,7 +114,7 @@ public class BoardService {
                 .innerJoin(board.member, member)
                 .where(category.id.eq(id))
                 .orderBy(board.updatedDate.desc())
-                .limit(15)
+                .limit(getLimit(id))
                 .fetch();
 
         for (BoardGridDTO boardGridDTO : list) {
@@ -122,6 +122,15 @@ public class BoardService {
         }
 
         return list;
+
+    }
+
+    private Long getLimit(Long id) {
+
+        if (id == 1 || id == 2) {
+            return 15L;
+        }
+        return 5L;
 
     }
 

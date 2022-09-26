@@ -141,7 +141,7 @@ public class CommentService {
                     comment.setTotalNotRecommended(comment.getTotalNotRecommended()+ 1);
                 } else if(commentMemberRecommended.getRecommended() == 0 && commentMemberRecommended.getNotRecommended() == 1) {
                     commentMemberRecommended.setNotRecommended(0);
-                    comment.setTotalRecommended(comment.getTotalNotRecommended()- 1);
+                    comment.setTotalNotRecommended(comment.getTotalNotRecommended()- 1);
                 } else {
                     throw new RecommendedException("recommended");
                 }
