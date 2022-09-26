@@ -25,14 +25,17 @@ public class BoardGridDTO {
 
     private String hoursAgo;
 
+    private Boolean isDeleted;
+
     @QueryProjection
-    public BoardGridDTO(Long boardId, String title, String categoryName, Long commentCount, String nickname, LocalDateTime createDate) {
+    public BoardGridDTO(Long boardId, String title, String categoryName, Long commentCount, String nickname, LocalDateTime createDate, Boolean isDeleted) {
         this.boardId = boardId;
         this.title = title;
         this.categoryName = categoryName;
         this.commentCount = commentCount;
         this.nickname = nickname;
         this.createDate = createDate;
+        this.isDeleted = isDeleted;
     }
 
     public void setHoursAgo(String hoursAgo) {

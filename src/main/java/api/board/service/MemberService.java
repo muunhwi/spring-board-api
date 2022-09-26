@@ -102,7 +102,7 @@ public class MemberService implements UserDetailsService {
     @Transactional
     public TokenDto tokenRemake(TokenDto tokenDto) {
         Optional<MemberToken> findToken = memberTokenRepository.findOneByRefreshToken(tokenDto.getRefreshToken());
-        MemberToken memberToken = findToken.orElseThrow(() -> new EntityNotFoundException("NO JWT"));
+        MemberToken memberToken = findToken.orElseThrow(() -> new EntityNotFoundException("token"));
 
         String refreshToken = memberToken.getRefreshToken();
         String accessToken = null;

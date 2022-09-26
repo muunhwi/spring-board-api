@@ -18,8 +18,4 @@ public class BoardImage {
     private String originalName;
     private String serverSavedName;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name ="board_id")
-    private Board board;
-
 }

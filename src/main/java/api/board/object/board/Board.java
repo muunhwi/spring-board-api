@@ -6,6 +6,7 @@ import api.board.object.comment.Comment;
 import api.board.object.member.Member;
 import api.board.object.dto.board.BoardDTO;
 import lombok.*;
+import org.springframework.util.StringUtils;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -31,10 +32,6 @@ public class Board extends BaseEntity {
     @Column
     private String contents;
 
-    @OneToMany(mappedBy = "board")
-    @Builder.Default
-    private List<BoardImage> boardImages = new ArrayList<>();
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name ="member_id")
     private Member member;
@@ -50,6 +47,11 @@ public class Board extends BaseEntity {
     private int totalRecommended;
     private int totalNotRecommended;
 
+    private Boolean isDeleted;
+
+    public void setDeleted(Boolean deleted) {
+        isDeleted = deleted;
+    }
 
     public void setMember(Member member) {
         if(member != null) {
@@ -61,6 +63,21 @@ public class Board extends BaseEntity {
         if(category != null) {
             this.category = category;
         }
+    }
+
+    public void setTitle(String title) {
+
+        if(!StringUtils.hasText(title)) {
+            return;
+        }
+        this.title = title;
+    }
+
+    public void setContents(String contents) {
+        if(!StringUtils.hasText(contents)) {
+            return;
+        }
+        this.contents = contents;
     }
 
     public void setTotalRecommended(int totalRecommended) {
@@ -77,6 +94,7 @@ public class Board extends BaseEntity {
                 .totalNotRecommended(0)
                 .totalRecommended(0)
                 .title(board.getTitle())
+                .isDeleted(false)
                 .build();
     }
 
@@ -89,6 +107,7 @@ public class Board extends BaseEntity {
                 .title(board.getTitle())
                 .recommended(board.getTotalRecommended())
                 .notRecommended(board.getTotalNotRecommended())
+                .isDeleted(board.getIsDeleted())
                 .build();
     }
 }

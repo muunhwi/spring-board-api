@@ -26,7 +26,7 @@ public class DBInitClass {
     private final MemberService memberService;
     private final AuthorityRepository authorityRepository;
 
-//    @EventListener(ApplicationReadyEvent.class)
+    @EventListener(ApplicationReadyEvent.class)
     public void initialization() {
 
         String[] categories = {"또드립", "유저 게시글", "붐업 베스트",

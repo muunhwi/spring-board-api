@@ -36,7 +36,7 @@ public class MyControllerAdvice {
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String message = e.getMessage();
         ErrorDto error = ErrorDto.builder()
-                .error("Entity Not Found" + message)
+                .error("Entity Not Found")
                 .message(e.getMessage())
                 .date(date)
                 .build();

@@ -23,6 +23,8 @@ public class CommentDTO {
     private String hoursAgo;
     private int Recommended;
     private int NotRecommended;
+    private Boolean isDeleted;
+    private Boolean flag;
 
     @QueryProjection
     @Builder
@@ -34,7 +36,10 @@ public class CommentDTO {
                       String parentName,
                       LocalDateTime createdDate,
                       int Recommended,
-                      int NotRecommended) {
+                      int NotRecommended,
+                      Boolean isDeleted,
+                      Boolean flag
+                      ) {
         this.id = id;
         this.contents = contents;
         this.step = step;
@@ -45,6 +50,15 @@ public class CommentDTO {
         this.createdDate = createdDate;
         this.Recommended = Recommended;
         this.NotRecommended =NotRecommended;
+        this.isDeleted = isDeleted;
+        this.flag = flag;
+    }
+
+    public void setFlag(Boolean flag) {
+        if(flag == null) {
+            return;
+        }
+        this.flag = flag;
     }
 
     public void setHoursAgo(String hoursAgo) {

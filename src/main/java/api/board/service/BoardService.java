@@ -3,12 +3,10 @@ package api.board.service;
 import api.board.exception.RecommendedException;
 import api.board.object.board.Board;
 import api.board.object.board.BoardMemberRecommended;
+import api.board.object.board.QBoard;
 import api.board.object.board.QBoardMemberRecommended;
 import api.board.object.category.Category;
-import api.board.object.dto.board.BoardCondition;
-import api.board.object.dto.board.BoardDTO;
-import api.board.object.dto.board.BoardGridDTO;
-import api.board.object.dto.board.QBoardGridDTO;
+import api.board.object.dto.board.*;
 import api.board.object.member.Member;
 import api.board.repository.BoardMemberRecommendedRepository;
 import api.board.repository.BoardRepository;
@@ -72,6 +70,30 @@ public class BoardService {
         return save.getId();
     }
 
+    public void update(UpdateBoardDTO boardDTO) {
+        Optional<Board> findBoard = boardRepository.findById(boardDTO.getBoardId());
+        Board board = findBoard.orElseThrow(() -> new EntityNotFoundException("Board"));
+
+        board.setContents(boardDTO.getContents());
+        board.setTitle(boardDTO.getTitle());
+
+        if(boardDTO.getCategoryName() != null) {
+            Optional<Category> findCategory = categoryRepository.findByName(boardDTO.getCategoryName());
+            Category category = findCategory.orElseThrow(() -> new EntityNotFoundException("Category"));
+            board.setCategory(category);
+        }
+    }
+
+    public void delete(Long id) {
+        Optional<Board> findBoard = boardRepository.findById(id);
+        Board board = findBoard.orElseThrow(() -> new EntityNotFoundException("Board"));
+
+        board.setContents("삭제된 게시글");
+        board.setTitle("삭제된 게시글");
+        board.setDeleted(true);
+    }
+
+
     public List<BoardGridDTO> gridBoardList(Long id) {
 
         List<BoardGridDTO> list = queryFactory.select(new QBoardGridDTO(
@@ -84,7 +106,8 @@ public class BoardService {
                                 .where(comment.board.id.eq(board.id)),"commentCount"
                 ),
                 member.nickname,
-                board.createdDate
+                board.createdDate,
+                board.isDeleted
         ))
                 .from(board)
                 .innerJoin(board.category, category)
@@ -102,7 +125,7 @@ public class BoardService {
 
     }
 
-    public Page<BoardGridDTO> searchConditionBoardList(Long id, BoardCondition boardCondition , Pageable pageable) {
+    public Page<BoardGridDTO> searchConditionBoardList(Long id, BoardCondition boardCondition, Pageable pageable) {
 
         List<BoardGridDTO> list = queryFactory.select(new QBoardGridDTO(
                 board.id,
@@ -114,7 +137,8 @@ public class BoardService {
                                 .where(comment.board.id.eq(board.id)),"commentCount"
                 ),
                 member.nickname,
-                board.createdDate
+                board.createdDate,
+                board.isDeleted
         ))
                 .from(board)
                 .innerJoin(board.category, category)
@@ -134,6 +158,44 @@ public class BoardService {
                 .innerJoin(board.category, category)
                 .innerJoin(board.member, member)
                 .where(category.id.eq(id).and(getCondition(boardCondition)));
+
+        return PageableExecutionUtils.getPage(list, pageable, countQuery::fetchOne);
+
+    }
+
+    public Page<BoardGridDTO> myPageBoardList(String email, Pageable pageable) {
+
+        List<BoardGridDTO> list = queryFactory.select(new QBoardGridDTO(
+                board.id,
+                board.title,
+                category.name,
+                ExpressionUtils.as(
+                        JPAExpressions.select(comment.count())
+                                .from(comment)
+                                .where(comment.board.id.eq(board.id)),"commentCount"
+                ),
+                member.nickname,
+                board.createdDate,
+                board.isDeleted
+        ))
+                .from(board)
+                .innerJoin(board.category, category)
+                .innerJoin(board.member, member)
+                .where(member.email.eq(email))
+                .orderBy(board.updatedDate.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        for (BoardGridDTO boardGridDTO : list) {
+            boardGridDTO.setHoursAgo(Utils.getHoursAgo(boardGridDTO.getCreateDate()));
+        }
+
+        JPAQuery<Long> countQuery = queryFactory.select(board.count())
+                .from(board)
+                .innerJoin(board.category, category)
+                .innerJoin(board.member, member)
+                .where(member.email.eq(email));
 
         return PageableExecutionUtils.getPage(list, pageable, countQuery::fetchOne);
 

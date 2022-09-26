@@ -5,14 +5,10 @@ import api.board.object.board.Board;
 import api.board.object.comment.Comment;
 import api.board.object.comment.CommentMemberRecommended;
 import api.board.object.comment.QComment;
-import api.board.object.comment.QCommentMemberRecommended;
-import api.board.object.dto.comment.CommentDTO;
-import api.board.object.dto.comment.CommentData;
 
-import api.board.object.dto.comment.QCommentDTO;
-import api.board.object.dto.comment.QCommentData;
+import api.board.object.dto.comment.*;
+
 import api.board.object.member.Member;
-import api.board.object.member.QMember;
 import api.board.repository.BoardRepository;
 import api.board.repository.CommentMemberRecommendedRepository;
 import api.board.repository.CommentRepository;
@@ -27,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +32,7 @@ import javax.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Optional;
 
+import static api.board.object.board.QBoard.board;
 import static api.board.object.comment.QComment.comment;
 import static api.board.object.comment.QCommentMemberRecommended.*;
 import static api.board.object.member.QMember.member;
@@ -65,6 +63,7 @@ public class CommentService {
                 .board(board)
                 .contents(contents)
                 .step(0)
+                .isDeleted(false)
                 .group(commentData.getGroups() + 1)
                 .order(commentData.getOrders() + 1)
                 .member(board.getMember())
@@ -89,6 +88,7 @@ public class CommentService {
         Comment comment = Comment.builder()
                 .board(board)
                 .parentId(commentId)
+                .isDeleted(false)
                 .contents(contents)
                 .step(1)
                 .group(commentData.getGroups())
@@ -198,7 +198,9 @@ public class CommentService {
                 ),
                 c1.createdDate,
                 c1.totalRecommended,
-                c1.totalNotRecommended
+                c1.totalNotRecommended,
+                c1.isDeleted,
+                c1.step.eq(3)
         ))
                 .from(c1)
                 .innerJoin(c1.member, member)
@@ -222,6 +224,105 @@ public class CommentService {
 
     }
 
+    @Transactional(readOnly = true)
+    public Page<CommentDTO> getCommentsWithUser(Long boardId, Pageable pageable, String email) {
+
+        QComment c1 = new QComment("c1");
+        QComment c2 = new QComment("c2");
+
+        Optional<Member> findEmail = memberRepository.findByEmail(email);
+        Member findMember = findEmail.orElseThrow(() -> new EntityNotFoundException("Member"));
+        String nickname = findMember.getNickname();
+
+
+        List<CommentDTO> list = queryFactory.select(new QCommentDTO(
+                c1.id,
+                c1.contents,
+                c1.step,
+                c1.group,
+                c1.order,
+                c1.member.nickname,
+                ExpressionUtils.as(
+                        JPAExpressions.select(c1.member.nickname)
+                                .from(c2)
+                                .where(c2.id.eq(c1.parentId)),"parentName"
+                ),
+                c1.createdDate,
+                c1.totalRecommended,
+                c1.totalNotRecommended,
+                c1.isDeleted,
+                c1.member.nickname.eq(nickname)
+        ))
+                .from(c1)
+                .innerJoin(c1.member, member)
+                .where(c1.board.id.eq(boardId))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .orderBy(c1.group.asc())
+                .fetch();
+
+
+        JPAQuery<Long> count = queryFactory.select(comment.count()
+        )
+                .from(comment)
+                .where(c1.board.id.eq(boardId));
+
+        for (CommentDTO commentDTO : list) {
+            commentDTO.setHoursAgo(Utils.getHoursAgo(commentDTO.getCreatedDate()));
+        }
+
+        return PageableExecutionUtils.getPage(list, pageable, count::fetchOne);
+
+    }
+
+    public Page<CommentListDTO> myPageCommentList(String email, Pageable pageable) {
+
+        QComment c1 = new QComment("c1");
+
+        List<CommentListDTO> list = queryFactory.select(new QCommentListDTO(
+                c1.id,
+                c1.board.id,
+                c1.contents,
+                c1.createdDate,
+                c1.isDeleted,
+                c1.member.nickname
+        ))
+                .from(c1)
+                .innerJoin(c1.member, member)
+                .innerJoin(c1.board, board)
+                .where(c1.member.email.eq(email))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .orderBy(c1.group.asc())
+                .fetch();
+
+
+        JPAQuery<Long> count = queryFactory.select(comment.count()
+        )
+                .from(comment)
+                .where(member.email.eq(email));
+
+
+        for (CommentListDTO commentDTO : list) {
+            commentDTO.setHoursAgo(Utils.getHoursAgo(commentDTO.getCreatedDate()));
+        }
+        return PageableExecutionUtils.getPage(list, pageable, count::fetchOne);
+
+    }
+
+    public void update(Long id, String contents) {
+        Optional<Comment> findComment = commentRepository.findById(id);
+        Comment comment = findComment.orElseThrow(() -> new EntityNotFoundException("Comment"));
+        comment.setContents(contents);
+    }
+
+    public void delete(Long id) {
+        Optional<Comment> findComment = commentRepository.findById(id);
+        Comment comment = findComment.orElseThrow(() -> new EntityNotFoundException("Comment"));
+        comment.setContents("삭제된 게시글");
+        comment.setDeleted(true);
+    }
+
     private CommentDTO commentMapToCommentDTO(Comment comment) {
 
         CommentDTO commentDTO = CommentDTO.builder()
@@ -229,6 +330,7 @@ public class CommentService {
                 .name(comment.getMember().getNickname())
                 .contents(comment.getContents())
                 .parentName(null)
+                .isDeleted(comment.getIsDeleted())
                 .group(comment.getGroup())
                 .order(comment.getOrder())
                 .step(comment.getStep())
@@ -248,6 +350,7 @@ public class CommentService {
                 .fetchOne();
         CommentDTO commentDTO = CommentDTO.builder()
                 .id(comment.getId())
+                .isDeleted(comment.getIsDeleted())
                 .name(comment.getMember().getNickname())
                 .contents(comment.getContents())
                 .parentName(parentName)

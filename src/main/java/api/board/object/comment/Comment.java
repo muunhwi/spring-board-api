@@ -21,6 +21,8 @@ public class Comment extends BaseEntity {
 
     private String contents;
 
+    private Boolean isDeleted;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id")
     private Board board;
@@ -44,5 +46,13 @@ public class Comment extends BaseEntity {
     }
     public void setTotalNotRecommended(int totalNotRecommended) {
         this.totalNotRecommended = totalNotRecommended;
+    }
+
+    public void setContents(String contents) {
+        this.contents = contents;
+    }
+
+    public void setDeleted(Boolean deleted) {
+        isDeleted = deleted;
     }
 }

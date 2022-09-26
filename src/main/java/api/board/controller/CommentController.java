@@ -1,6 +1,9 @@
 package api.board.controller;
 
+import api.board.object.dto.board.BoardGridDTO;
+import api.board.object.dto.board.UpdateBoardDTO;
 import api.board.object.dto.comment.CommentDTO;
+import api.board.object.dto.comment.CommentListDTO;
 import api.board.object.dto.comment.RecommendedDto;
 import api.board.service.CommentService;
 import lombok.RequiredArgsConstructor;
@@ -24,10 +27,37 @@ public class CommentController {
 
     @GetMapping("/comment/{id}")
     public ResponseEntity<?> getComments(@PathVariable("id") Long BoardId,
-                                         @PageableDefault(size=50) Pageable pageable) {
-
+                                         @PageableDefault(size=50) Pageable pageable
+                                        ) {
         Page<CommentDTO> comments = commentService.getComments(BoardId, pageable);
         return ResponseEntity.ok(comments);
+    }
+
+    @GetMapping("/comment/state/{id}")
+    public ResponseEntity<?> getCommentsWithUser(
+                @AuthenticationPrincipal User user,
+                @PathVariable("id") Long BoardId,
+                @PageableDefault(size=50) Pageable pageable) {
+        Page<CommentDTO> comments = commentService.getCommentsWithUser(BoardId, pageable, user.getUsername());
+        return ResponseEntity.ok(comments);
+    }
+
+    @GetMapping("/comment/mypage")
+    public ResponseEntity<?> mypage(@AuthenticationPrincipal User user, @PageableDefault(size= 20) Pageable pageable) {
+        Page<CommentListDTO> commentListDTOS = commentService.myPageCommentList(user.getUsername(), pageable);
+        return ResponseEntity.ok(commentListDTOS);
+    }
+
+    @PostMapping("/comment/update/{id}")
+    public ResponseEntity<?> update(@PathVariable("id")Long commentId, @RequestBody String contents)  {
+        commentService.update(commentId, contents);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/comment/delete/{id}")
+    public ResponseEntity<?> delete(@PathVariable("id") Long commentId) {
+        commentService.delete(commentId);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/comment/{id}")

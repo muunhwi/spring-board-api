@@ -4,6 +4,7 @@ import api.board.object.dto.Image.ImageFile;
 import api.board.object.dto.board.BoardCondition;
 import api.board.object.dto.board.BoardDTO;
 import api.board.object.dto.board.BoardGridDTO;
+import api.board.object.dto.board.UpdateBoardDTO;
 import api.board.object.dto.comment.RecommendedDto;
 import api.board.service.BoardService;
 import api.board.service.UploaderService;
@@ -36,10 +37,6 @@ public class BoardController {
         return ResponseEntity.ok(findBoardDTO);
     }
 
-    @GetMapping("/board/write")
-    public ResponseEntity<?> boardWrite() {
-        return ResponseEntity.status(401).build();
-    }
 
     @GetMapping(value = "/board/image/{id}")
     public ResponseEntity<?> image(@PathVariable Long id) {
@@ -50,6 +47,12 @@ public class BoardController {
     @GetMapping("/board/grid/{categoryId}")
     public ResponseEntity<?> getGrid(@PathVariable("categoryId") Long id) {
         List<BoardGridDTO> boardGridDTOS = boardService.gridBoardList(id);
+        return ResponseEntity.ok(boardGridDTOS);
+    }
+
+    @GetMapping("/board/mypage")
+    public ResponseEntity<?> mypage(@AuthenticationPrincipal User user, @PageableDefault(size= 20) Pageable pageable) {
+        Page<BoardGridDTO> boardGridDTOS = boardService.myPageBoardList(user.getUsername(), pageable);
         return ResponseEntity.ok(boardGridDTOS);
     }
 
@@ -73,6 +76,19 @@ public class BoardController {
         Long id = boardService.save(board, user.getUsername());
         return new ResponseEntity<>(id, HttpStatus.OK);
     }
+
+    @PostMapping("/board/update")
+    public ResponseEntity<?> update(@RequestBody UpdateBoardDTO board)  {
+        boardService.update(board);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/board/delete/{id}")
+    public ResponseEntity<?> delete(@PathVariable("id") Long boardId) {
+        boardService.delete(boardId);
+        return ResponseEntity.ok().build();
+    }
+
 
     @PostMapping("/board/list/{categoryId}")
     public ResponseEntity<?> getBoardPage(@PathVariable("categoryId") Long id,

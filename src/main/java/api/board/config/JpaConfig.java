@@ -8,7 +8,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 @Configuration
-public class AppConfig {
+public class JpaConfig {
 
     @PersistenceContext
     private EntityManager entityManager;
